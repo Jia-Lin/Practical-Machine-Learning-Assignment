@@ -1,0 +1,77 @@
+---
+title: "Data Science - Practical Machine Learning Assignment"
+author: "Jia Lin"
+date: "May 18, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+```
+
+## Executive Summary
+
+
+## Source of Data
+
+The data of this assignment comes from [Human Activity Recognition project](http://groupware.les.inf.puc-rio.br/har). This research is using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks.  
+Training Data:[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+Testing Date: [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+)
+```{r source}
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "training.csv" )
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", "testing.csv")
+df<- read.csv("training.csv", na.strings = c("NA", ""))
+quiz <- read.csv("testing.csv", na.strings = c("NA", ""))
+
+```
+
+## Data Cleaning
+First all of all, we will remove the first 6 columns which are information only, not part of the collected data.  
+We also notice there are quite large amount data are NA data. We shall make sense of the distribution of the NA data in all columns first.
+
+``` {r data_cleanng}
+df <- df[, -c(1:6)]
+colNZ <- sapply(df, function(x) {sum(is.na(x))/length(x)})
+hist(colNZ)
+```
+As the histogram shows, we will choose 0.9 as the factor. This means our model will not include those columns with more than 90% NA values.  
+
+We will then separate the data into training and testing - 70% training and 30% testing.
+
+``` {r subset}
+df <- subset(df[, which(colNZ<0.9)])
+set.seed(2016)
+inTrain <- createDataPartition(df$classe, p=3/4 )[[1]]
+training <- df[inTrain, ]
+testing <- df[-inTrain,]
+```
+
+### Random Forest Model
+We will apply random forest model and calculate the accuracy here.
+fitRF <- train(classe ~., method="rf", data=training, prox=FALSE)
+``` {r readRDS, echo = FALSE}
+readRDS("fitRF.RDS")
+
+```
+
+``` {r rf}
+fitRF$finalModel
+preRF <- predict(fitRF, testing)
+confusionMatrix(preRF, testing$classe)
+
+```
+As this model already has 99.9% accuracy, we will adopt this value. 
+
+``` {r quizrf}
+quizRf <- predict(fitRF, quiz)
+quizRF
+```
+
+``` {r gbm}
+fitGBM <- train(classe ~., method="gbm", data=training, verbose=FALSE)
+preGBM <- predict(fitGBM, testingNoNA)
+confusionMatrix(preGBM, testingNoNA$classe)
+quizGBM <- predict(fitGBM, quiz)
+```
