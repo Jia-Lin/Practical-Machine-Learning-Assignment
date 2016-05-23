@@ -8,16 +8,17 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(caret)
+library(corrplot)
 ```
 
 ## Executive Summary
-
+This write-up is the assignment work for Practical Machine Learning on coursera. In this assignment we will use the human activity recognition data and predict the manner of exercise. 
 
 ## Source of Data
 
 The data of this assignment comes from [Human Activity Recognition project](http://groupware.les.inf.puc-rio.br/har). This research is using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks.  
-Training Data:[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
-Testing Date: [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+Training Data:[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)  
+Testing Data: [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 )
 ```{r source}
 download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "training.csv" )
@@ -36,6 +37,7 @@ df <- df[, -c(1:6)]
 colNZ <- sapply(df, function(x) {sum(is.na(x))/length(x)})
 hist(colNZ)
 ```
+  
 As the histogram shows, we will choose 0.9 as the factor. This means our model will not include those columns with more than 90% NA values.  
 
 We will then separate the data into training and testing - 70% training and 30% testing.
@@ -46,32 +48,40 @@ set.seed(2016)
 inTrain <- createDataPartition(df$classe, p=3/4 )[[1]]
 training <- df[inTrain, ]
 testing <- df[-inTrain,]
-```
+```  
+After data cleaning up, dimension of the the training and testing data:
 
-### Random Forest Model
+``` {r dim}
+dim(training)
+dim(testing)
+```
+## Variable correlation matrix
+
+``` {r corr}
+corrMatrix <- cor(training[, - 54])
+corrplot(corrMatrix, method="color", type="lower", tl.cex = 0.8, tl.col = rgb(0, 0, 0))
+
+```  
+
+## Random Forest Model
 We will apply random forest model and calculate the accuracy here.
-fitRF <- train(classe ~., method="rf", data=training, prox=FALSE)
-``` {r readRDS, echo = FALSE}
-readRDS("fitRF.RDS")
 
+
+``` {r training}
+fitRF <- train(classe ~., method="rf", data=training, prox=FALSE)
 ```
+
+Use testing set to validate the accuracy.
 
 ``` {r rf}
-fitRF$finalModel
 preRF <- predict(fitRF, testing)
 confusionMatrix(preRF, testing$classe)
 
 ```
-As this model already has 99.9% accuracy, we will adopt this value. 
+As this model already has 99.9% accuracy, we will adopt this model and apply to the 20 quiz questions.
 
 ``` {r quizrf}
 quizRf <- predict(fitRF, quiz)
-quizRF
+quizRf
 ```
 
-``` {r gbm}
-fitGBM <- train(classe ~., method="gbm", data=training, verbose=FALSE)
-preGBM <- predict(fitGBM, testingNoNA)
-confusionMatrix(preGBM, testingNoNA$classe)
-quizGBM <- predict(fitGBM, quiz)
-```
