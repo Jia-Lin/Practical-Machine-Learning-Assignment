@@ -65,10 +65,10 @@ corrplot(corrMatrix, method="color", type="lower", tl.cex = 0.8, tl.col = rgb(0,
 
 ## Random Forest Model
 We will apply random forest model and calculate the accuracy here.
-fitRF <- train(classe ~., method="rf", data=training, prox=FALSE)
+
 
 ``` {r training}
-fitRF <- readRDS("fitRF.RDS")
+fitRF <- train(classe ~., method="rf", data=training, prox=FALSE)
 ```
 
 Use testing set to validate the accuracy.
